@@ -26,7 +26,7 @@ def read_exclude(ignore_path: str) -> List[str]:
     """
     if not os.path.exists(Path(ignore_path)):
         ignore = open(Path(ignore_path), 'w+')
-        ignore.writelines(['./.ignore\n', './deploy.py\n', '*/.*'])
+        ignore.writelines(['./.ignore\n', './ev3deploy.py\n', '*/.*'])
         ignore.close()
 
     ignore = open(ignore_path, 'r')
