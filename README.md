@@ -1,5 +1,6 @@
 # Ev3Deploy
 Transfer code from your computer to the ev3 and run it remotely.
+Note: This project is for use with an Ev3 running [ev3dev](https://www.ev3dev.org/).
 
 ## Getting Started
 This project supports python 3.4 and up.
