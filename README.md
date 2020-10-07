@@ -1,7 +1,7 @@
 # Ev3Deploy
 Transfer code from your computer to the ev3 and run it remotely.
 
-## Requirments
+## Getting Started
 This project supports python 3.4 and up.
 To use this project you need to install the scp python package:
 ```
