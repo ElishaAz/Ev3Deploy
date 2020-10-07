@@ -7,9 +7,7 @@ import argparse
 
 from paramiko import SSHClient
 from scp import SCPClient
-from typing import List, Optional
-
-from typing.io import TextIO
+from typing import List, Optional, TextIO
 
 PATH = './'
 EXECUTABLE = ['*.py', '*.sh']
