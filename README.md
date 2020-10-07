@@ -20,3 +20,6 @@ If you want to run a file on the ev3, run
 python3 ev3deploy.py --execute_file <file_name>
 ```
 You will see the output of the program in your console.
+
+
+No other setup required!
