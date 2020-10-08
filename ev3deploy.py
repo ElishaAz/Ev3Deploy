@@ -174,7 +174,7 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
                 filepath = subdir + '/' + filename  # get full file path (relative to working directory)
                 if not match(filepath, exclude):  # if the file path does not match any of the excluded patterns:
                     if print_console:
-                        print("Sending", Path(filepath), "...")
+                        print("Sending", Path(filepath), "... ", end='')
                     # create the directory if it does not exist
                     ssh.exec_command('mkdir -p ' + path_join('~', dir_name, subdir).as_posix())
                     # copy files using scp
