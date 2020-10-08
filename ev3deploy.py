@@ -238,4 +238,5 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
 if __name__ == '__main__':
     get_args()
 
-    deploy(PATH, HOSTNAME, USERNAME, PASSWORD, EXECUTE_FILE, EXECUTABLE, IGNORE_PATH)
+    deploy(path=PATH, hostname=HOSTNAME, username=USERNAME, password=PASSWORD,
+           execute_file=EXECUTE_FILE, executable=EXECUTABLE, exclude_path=IGNORE_PATH)
