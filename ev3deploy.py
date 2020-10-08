@@ -92,7 +92,7 @@ def get_args() -> None:
         EXECUTE_FILE = args.execute_file
 
 
-def reroute_stdout(st: TextIO):
+def redirect_stdout_handler(st: TextIO):
     """
     Copies 'st' to system stdout.
     :param st: An output stream.
@@ -101,7 +101,7 @@ def reroute_stdout(st: TextIO):
         print(l, end="")
 
 
-def reroute_stderr(st: TextIO):
+def redirect_stderr_handler(st: TextIO):
     """
     Copies 'st' to system stderr.
     :param st: An output stream.
@@ -113,7 +113,7 @@ def reroute_stderr(st: TextIO):
 run_stdin = True
 
 
-def reroute_stdin(st: TextIO):
+def redirect_stdin_handler(st: TextIO):
     """
     Copies system stdin to st.
     :param st: An input stream.
@@ -130,7 +130,7 @@ def reroute_stdin(st: TextIO):
 def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", password: str = "maker",
            execute_file: Optional[str] = None, executable: List[str] = ('*.py',),
            exclude_path: str = "./.ignore", print_console: bool = True,
-           pipe_stdout: bool = True, pipe_stderr: bool = True, pipe_stdin: bool = False) -> None:
+           redirect_stdout: bool = True, redirect_stderr: bool = True, redirect_stdin: bool = False) -> None:
     """
     Send code to Ev3
     :param path: The Directory to send (default is current directory).
@@ -142,12 +142,14 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
     :param executable: A list of patterns of files that should be marked as executable (default is ['*.py']).
     :param exclude_path: The file containing the list of files to ignore (default is '.ignore').
     :param print_console: Should we print info to the console?
-    :param pipe_stdout: Should we pipe stdout form ev3 to console?
-    :param pipe_stderr: Should we pipe stderr form ev3 to console?
-    :param pipe_stdin: SHould we pipe counsole input to ev3 stdin?
+    :param redirect_stdout: Should we redirect stdout form ev3 to console?
+    :param redirect_stderr: Should we redirect stderr form ev3 to console?
+    :param redirect_stdin: Should we redirect console input to ev3 stdin?
      This is disabled by default as it cannot terminate without reading from stdin.
     """
     # Get / Set working directory
+    if print_console:
+        print("CD", path)
     os.chdir(path)
     working_dir = os.getcwd()
     dir_name = os.path.basename(working_dir)
@@ -155,28 +157,35 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
     exclude = read_exclude(exclude_path)
 
     # Set up ssh
+    if print_console:
+        print("Starting ssh ...")
     ssh = SSHClient()
     ssh.load_system_host_keys()
+    if print_console:
+        print("Connecting to", F"{username}@{hostname} ...")
     ssh.connect(hostname=hostname, username=username, password=password)
 
     with SCPClient(ssh.get_transport()) as scp:
         for subdir, dirs, files in os.walk('.'):  # for every file in current working directory:
             for filename in files:
                 filepath = subdir + '/' + filename  # get full file path (relative to working directory)
-                if match(filepath, exclude):  # if the file path matches any of the excluded patterns:
+                if not match(filepath, exclude):  # if the file path does not match any of the excluded patterns:
                     if print_console:
-                        print('Excluding', Path(filepath))
-                else:
-                    if print_console:
-                        print("Sending", Path(filepath))
+                        print("Sending", Path(filepath), "...")
                     # create the directory if it does not exist
                     ssh.exec_command('mkdir -p ' + path_join('~', dir_name, subdir).as_posix())
                     # copy files using scp
                     scp.put(str(path_join(working_dir, filepath)), path_join('~', dir_name, filepath).as_posix())
-
+                    if print_console:
+                        print("Sent")
                     if match(filepath, executable):  # if file path matches any of the executable patterns:
                         # mark as executable
+                        if print_console:
+                            print(path_join('~', dir_name, filepath).as_posix(), "marked as executable.")
                         ssh.exec_command('chmod u+x ' + path_join('~', dir_name, filepath).as_posix())
+                else:
+                    if print_console:
+                        print('Excluding', Path(filepath), '.')
 
         if execute_file:
             if print_console:
@@ -185,27 +194,27 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
             stdin, stdout, stderr = ssh.exec_command(path_join('~', dir_name, execute_file).as_posix(), get_pty=True)
 
             # create the rerouting threads
-            if pipe_stdout:
-                out = threading.Thread(target=reroute_stdout, args=(stdout,))
-            if pipe_stderr:
-                err = threading.Thread(target=reroute_stderr, args=(stderr,))
-            if pipe_stdin:
-                sin = threading.Thread(target=reroute_stdin, args=(stdin,))
+            if redirect_stdout:
+                out = threading.Thread(target=redirect_stdout_handler, args=(stdout,))
+            if redirect_stderr:
+                err = threading.Thread(target=redirect_stderr_handler, args=(stderr,))
+            if redirect_stdin:
+                sin = threading.Thread(target=redirect_stdin_handler, args=(stdin,))
 
             # start them
-            if pipe_stdout:
+            if redirect_stdout:
                 out.start()
-            if pipe_stderr:
+            if redirect_stderr:
                 err.start()
-            if pipe_stdin:
+            if redirect_stdin:
                 sin.start()
 
             # wait for them to terminate
-            if pipe_stdout:
+            if redirect_stdout:
                 out.join()
-            if pipe_stderr:
+            if redirect_stderr:
                 err.join()
-            if pipe_stdin:
+            if redirect_stdin:
                 global run_stdin
                 # tell reroute_stdin to exit without sending data to stdin
                 run_stdin = False
