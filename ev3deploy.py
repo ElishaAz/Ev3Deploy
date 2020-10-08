@@ -193,7 +193,7 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
             # execute the file.
             stdin, stdout, stderr = ssh.exec_command(path_join('~', dir_name, execute_file).as_posix(), get_pty=True)
 
-            # create the rerouting threads
+            # create the redirecting threads
             if redirect_stdout:
                 out = threading.Thread(target=redirect_stdout_handler, args=(stdout,))
             if redirect_stderr:
@@ -216,7 +216,7 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
                 err.join()
             if redirect_stdin:
                 global run_stdin
-                # tell reroute_stdin to exit without sending data to stdin
+                # tell redirect_stdin_handler to exit without sending data to stdin
                 run_stdin = False
                 sys.stdin.close()
                 sin.join()
