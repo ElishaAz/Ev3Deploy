@@ -9,6 +9,9 @@ from paramiko import SSHClient
 from scp import SCPClient
 from typing import List, Optional, TextIO
 
+SIGKILL = 9
+SIGTERM = 15
+
 PATH = './'
 EXECUTABLE = ['*.py', '*.sh']
 PASSWORD = "maker"
@@ -198,16 +201,22 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
                 out = threading.Thread(target=redirect_stdout_handler, args=(stdout,))
             if redirect_stderr:
                 err = threading.Thread(target=redirect_stderr_handler, args=(stderr,))
+
             if redirect_stdin:
-                sin = threading.Thread(target=redirect_stdin_handler, args=(stdin,))
+                child_pid = os.fork()
+
+                if child_pid == 0:
+                    redirect_stdin_handler(stdin)
+                    os.kill(os.getpid(), SIGTERM)
+                # sin = threading.Thread(target=redirect_stdin_handler, args=(stdin,))
 
             # start them
             if redirect_stdout:
                 out.start()
             if redirect_stderr:
                 err.start()
-            if redirect_stdin:
-                sin.start()
+            # if redirect_stdin:
+            #     sin.start()
 
             # wait for them to terminate
             if redirect_stdout:
@@ -218,8 +227,9 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
                 global run_stdin
                 # tell redirect_stdin_handler to exit without sending data to stdin
                 run_stdin = False
-                sys.stdin.close()
-                sin.join()
+                # sys.stdin.close()
+                # sin.join()
+                os.kill(child_pid, SIGTERM)
 
             if print_console:
                 print('\nFinished.')
@@ -228,4 +238,4 @@ def deploy(path: str = './', hostname: str = "ev3dev", username: str = "robot", 
 if __name__ == '__main__':
     get_args()
 
-    deploy(PATH, PASSWORD, HOSTNAME, USERNAME, EXECUTE_FILE, EXECUTABLE, IGNORE_PATH)
+    deploy(PATH, HOSTNAME, USERNAME, PASSWORD, EXECUTE_FILE, EXECUTABLE, IGNORE_PATH)
